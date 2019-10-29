@@ -1,5 +1,8 @@
 package aa;
 
+import java.util.HashMap;
+import java.util.Iterator;
+
 import javax.xml.soap.MessageFactory;
 import javax.xml.soap.MimeHeaders;
 import javax.xml.soap.SOAPBody;
@@ -19,41 +22,46 @@ public class Main {
 	public static void main(String args[]) {
 
 
-		String soapEndpointUrl = "http://{host}/{fileName}.asmx?wsdl";
+		String soapEndpointUrl = "http://192.168.3.26:9200/hspmember.asmx?wsdl";
 		String protocol = SOAPConstants.SOAP_1_1_PROTOCOL;
-		String soapAction = "GetUser";
+		String soapAction = "GetTotaluser";
+		HashMap<String, String> params = new HashMap<>();
 		
-		callSoapWebService(soapEndpointUrl, soapAction, protocol);
+		params.put("userid", "wjddy89");
+		
+		callSoapWebService(soapEndpointUrl, soapAction, protocol, params);
 	}
 
-	private static void createSoapEnvelope(SOAPMessage soapMessage, String soapAction) throws SOAPException {
+	private static void createSoapEnvelope(SOAPMessage soapMessage, String soapAction, HashMap<String, String> params) throws SOAPException {
 		SOAPPart soapPart = soapMessage.getSOAPPart();
 
 		// SOAP Envelope
 		SOAPEnvelope envelope = soapPart.getEnvelope();
 		SOAPBody soapBody = envelope.getBody();
-		SOAPElement actionNode = soapBody.addChildElement(soapAction);
-		SOAPElement userIdNode = actionNode.addChildElement("userid");
 		
-		actionNode.setAttribute("xmlns", nameSpace);
-	
+		Iterator<String> keys = params.keySet().iterator();
+		
+		while (keys.hasNext()) {
+			String key = keys.next();
+			SOAPElement userIdNode = soapBody.addChildElement(key);
+			userIdNode.addTextNode(params.get(key));
+		}
+
 		envelope.setAttribute("xmlns:soap", "http://www.w3.org/2003/05/soap-envelope");
 		envelope.setAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
 		envelope.setAttribute("xmlns:xsd", "http://www.w3.org/2001/XMLSchema");
-		
-		userIdNode.addTextNode("wjddy89");
 
 		envelope.appendChild(soapBody);
 	}
 
-	private static void callSoapWebService(String soapEndpointUrl, String soapAction, String protocol) {
+	private static void callSoapWebService(String soapEndpointUrl, String soapAction, String protocol, HashMap<String, String> params) {
 		try {
 			
 
 			SOAPConnectionFactory soapConnectionFactory = SOAPConnectionFactory.newInstance();
 			SOAPConnection soapConnection = soapConnectionFactory.createConnection();
 
-			SOAPMessage soapResponse = soapConnection.call(createSOAPRequest(soapAction, protocol), soapEndpointUrl);
+			SOAPMessage soapResponse = soapConnection.call(createSOAPRequest(soapAction, protocol, params), soapEndpointUrl);
 
 			System.out.println("Response SOAP Message:");
 			soapResponse.writeTo(System.out);
@@ -67,14 +75,14 @@ public class Main {
 		}
 	}
 
-	private static SOAPMessage createSOAPRequest(String soapAction, String protocol) throws Exception {
+	private static SOAPMessage createSOAPRequest(String soapAction, String protocol, HashMap<String, String> params) throws Exception {
 		
 
 		MessageFactory messageFactory = MessageFactory.newInstance(protocol);
 
 		SOAPMessage soapMessage = messageFactory.createMessage();
 
-		createSoapEnvelope(soapMessage, soapAction);
+		createSoapEnvelope(soapMessage, soapAction, params);
 
 		MimeHeaders headers = soapMessage.getMimeHeaders();
 		headers.addHeader("SOAPAction", nameSpace + soapAction);
